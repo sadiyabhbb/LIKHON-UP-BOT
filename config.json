@@ -13,17 +13,17 @@
   "notesLanguage": "en",
   "adminOnly": {
     "enable": false,
-    "ignoreCommand": [61572915213085]
+    "ignoreCommand": [100090095242819]
   },
   "adminBot": [
     "",
-    "61572915213085"
+    "100090095242819"
   ],
   "whiteListMode": {
     "enable": false,
-    "whiteListIds": [61572915213085]
+    "whiteListIds": [100090095242819]
   },
-  "nickNameBot": "「 𝐍𝐈𝐑𝐎𝐁 」(∩˃o˂∩)♡",
+  "nickNameBot": "«⌈ ❰ 𝐈.𝐌.𝐒  ✨ 𝐀𝐃𝐌𝐈𝐍 🍒   ❿ ❱ ⌉»",
   "prefix": "/",
   "database": {
     "type": "sqlite",
