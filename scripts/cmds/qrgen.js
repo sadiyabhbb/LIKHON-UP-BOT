@@ -54,7 +54,7 @@ module.exports = {
 
       api.setMessageReaction("☑", messageID, () => {}, true);
       await api.sendMessage({
-        body: `✅ CanaryToken QR generated\n📧 Email: ${email}\n📝 Memo: ${memo}\n🔗 Token URL: ${data.token_url}`,
+        body: ``,
         attachment: fs.createReadStream(tmpPath)
       }, threadID, messageID);
 
