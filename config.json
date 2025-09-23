@@ -13,15 +13,15 @@
   "notesLanguage": "en",
   "adminOnly": {
     "enable": false,
-    "ignoreCommand": [61572240295227]
+    "ignoreCommand": [61572915213085]
   },
   "adminBot": [
-    "61572240295227",
-    "61579988683968"
+    "",
+    "61572915213085"
   ],
   "whiteListMode": {
     "enable": false,
-    "whiteListIds": [61572240295227]
+    "whiteListIds": [61572915213085]
   },
   "nickNameBot": "「 𝐍𝐈𝐑𝐎𝐁 」(∩˃o˂∩)♡",
   "prefix": "/",
