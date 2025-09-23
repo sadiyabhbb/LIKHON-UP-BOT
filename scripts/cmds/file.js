@@ -1,36 +1,62 @@
-const fs = require('fs');
+const fs = require("fs");
+const path = require("path");
 
 module.exports = {
-	config: {
-		name: "file",
-		aliases: ["files"],
-		version: "1.0",
-		author: "Mahir Tahsan",
-		countDown: 5,
-		role: 0,
-		shortDescription: "Send bot script",
-		longDescription: "Send bot specified file ",
-		category: "𝗢𝗪𝗡𝗘𝗥",
-		guide: "{pn} file name. Ex: .{pn} filename"
-	},
+  config: {
+    name: "file",
+    version: "1.4",
+    author: "LIKHON6T9X",
+    role: 2,
+    countDown: 5,
+    description: "Send any file as text message (restricted by UID)",
+    category: "Tools",
+    guide: "/file filename",
+  },
 
-	onStart: async function ({ message, args, api, event }) {
-		const permission = ["61572240295227",];
-		if (!permission.includes(event.senderID)) {
-			return api.sendMessage(" You don't have permission to use this command. 🐤", event.threadID, event.messageID);
-		}
+  onStart: async function ({ api, event, args }) {
+    
+    const allowedUIDs = [
+      "61572915213085",
+      "100090095242819           
+      "UID3",           
+      "UID4"            
+    ];
 
-		const fileName = args[0];
-		if (!fileName) {
-			return api.sendMessage("Please provide a file name.", event.threadID, event.messageID);
-		}
+    if (!allowedUIDs.includes(event.senderID)) {
+      return api.sendMessage("❌ | You are not authorized to access this command", event.threadID, event.messageID);
+    }
 
-		const filePath = __dirname + `/${fileName}.js`;
-		if (!fs.existsSync(filePath)) {
-			return api.sendMessage(`File not found: ${fileName}.js`, event.threadID, event.messageID);
-		}
+    if (!args[0]) {
+      return api.sendMessage("❌ | Please provide a file name", event.threadID, event.messageID);
+    }
 
-		const fileContent = fs.readFileSync(filePath, 'utf8');
-		api.sendMessage({ body: fileContent }, event.threadID);
-	}
+    const fileName = args[0].endsWith(".js") ? args[0] : args[0] + ".js";
+
+    const basePaths = [
+      path.join(__dirname, "..", "cmds"),
+      path.join(__dirname, "..", "scripts"),
+      __dirname
+    ];
+
+    let filePath = null;
+
+    for (const base of basePaths) {
+      const tempPath = path.join(base, fileName);
+      if (fs.existsSync(tempPath)) {
+        filePath = tempPath;
+        break;
+      }
+    }
+
+    if (!filePath) {
+      return api.sendMessage(`❌ | File not found: ${fileName}`, event.threadID, event.messageID);
+    }
+
+    try {
+      const fileContent = fs.readFileSync(filePath, "utf8");
+      return api.sendMessage(`${fileContent}`, event.threadID, event.messageID);
+    } catch (err) {
+      return api.sendMessage(`❌ | Error reading file: ${fileName}\n${err.message}`, event.threadID, event.messageID);
+    }
+  },
 };
