@@ -1,74 +1,55 @@
+const fs = require("fs-extra");
 const axios = require("axios");
-const fs = require("fs");
-const { shortenURL } = global.utils;
-const baseApiUrl = async () => {
-  const base = await axios.get(
-    `https://raw.githubusercontent.com/Blankid018/D1PT0/main/baseApiUrl.json`,
-  );
-  return base.data.api;
-};
+const request = require("request");
 
 module.exports = {
   config: {
     name: "autodl",
-    version: "1.0.1",
-    author: "Dipto",
-    countDown: 0,
+    version: "0.0.1",
+    author: "ArYAN",
+    countDown: 5,
     role: 0,
-    description: {
-      en: "Auto download video from tiktok, facebook, Instagram, YouTube, and more",
-    },
-    category: "media",
-    guide: {
-      en: "[video_link]",
-    },
+    shortDescription: "Always active auto video download for any URL",
+    category: "media"
   },
-  onStart: async function () {},
+
+  onStart: async function ({ api, event }) {
+    return api.sendMessage("✅ AutoLink Is running ", event.threadID);
+  },
+
   onChat: async function ({ api, event }) {
-    let dipto = event.body ? event.body : "";
+    const threadID = event.threadID;
+    const message = event.body;
+
+    const linkMatch = message.match(/(https?:\/\/[^\s]+)/);
+    if (!linkMatch) return;
+
+    const url = linkMatch[0];
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
     try {
-      if (
-        dipto.startsWith("https://vt.tiktok.com") ||
-        dipto.startsWith("https://www.tiktok.com/") ||
-        dipto.startsWith("https://www.facebook.com") ||
-        dipto.startsWith("https://www.instagram.com/") ||
-        dipto.startsWith("https://youtu.be/") ||
-        dipto.startsWith("https://youtube.com/") ||
-        dipto.startsWith("https://x.com/") ||
-        dipto.startsWith("https://twitter.com/") ||
-        dipto.startsWith("https://vm.tiktok.com") ||
-        dipto.startsWith("https://fb.watch")
-      ) {
-        api.setMessageReaction("⏳", event.messageID, (err) => {}, true);
+      const response = await axios.get(
+        `https://aryan-video-downloader.vercel.app/alldl?url=${encodeURIComponent(url)}`
+      );
+      const data = response.data.data || {};
+      const videoUrl = data.videoUrl || data.high || data.low || null;
+      if (!videoUrl) return;
 
-        const path = __dirname + `/cache/diptoo.mp4`;
-
-        const { data } = await axios.get(
-          `${await baseApiUrl()}/alldl?url=${encodeURIComponent(dipto)}`,
-        );
-        const vid = (
-          await axios.get(data.result, { responseType: "arraybuffer" })
-        ).data;
-
-        fs.writeFileSync(path, Buffer.from(vid, "utf-8"));
-        const url = await shortenURL(data.result);
-        api.setMessageReaction("✅", event.messageID, (err) => {}, true);
-
-        api.sendMessage(
-          {
-            body: `${data.cp || null}\n✅ | Link: ${url || null}`,
-
-            attachment: fs.createReadStream(path),
-          },
-          event.threadID,
-          () => fs.unlinkSync(path),
-          event.messageID,
-        );
-      }
-    } catch (e) {
-      api.setMessageReaction("❎", event.messageID, (err) => {}, true);
-      api.sendMessage(e, event.threadID, event.messageID);
+      request(videoUrl)
+        .pipe(fs.createWriteStream("video.mp4"))
+        .on("close", () => {
+          api.setMessageReaction("✅", event.messageID, () => {}, true);
+          api.sendMessage(
+            {
+              body: "",
+              attachment: fs.createReadStream("video.mp4")
+            },
+            threadID,
+            () => fs.unlinkSync("video.mp4")
+          );
+        });
+    } catch (err) {
+      api.sendMessage("❌ Failed to download video.", threadID, event.messageID);
     }
-  },
+  }
 };
