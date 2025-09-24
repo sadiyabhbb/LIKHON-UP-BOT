@@ -1,6 +1,6 @@
 module.exports = {
 		config: {
-				name: "noprefixmsg1",
+				name: "noprefix",
 				version: "1.0",
 				author: "Loid Butter",
 				countDown: 1,
