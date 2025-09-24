@@ -1,38 +1,75 @@
-const axios = require('axios');
- 
+const { GoatWrapper } = require("fca-aryan-nix");
+
+const g = require("fca-aryan-nix");
+const a = require("axios");
+const u = "https://apis-top.vercel.app/aryan/geminiv3";
+
 module.exports = {
   config: {
-    name: 'gemini',
-    version: '1.0',
-    author: 'Arfan',
+    name: "gemini",
+    aliases: ["ai","chat"],
+    version: "0.0.1",
+    author: "ArYAN",
+    countDown: 3,
     role: 0,
-    category: 'Ai-Chat',
-    shortDescription: { en: `gemini ai` },
-    longDescription: { en: `gemini ai` },
-    guide: { en: '{pn}gemini [query]' },
+    shortDescription: "Ask Gemini AI",
+    longDescription: "Talk with Gemini AI using Aryan's updated API",
+    category: "AI",
+    guide: "/gemini [your question]"
   },
- 
-  onStart: async function ({ api, event, args }) {
+
+  onStart: async function({ api, event, args }) {
+    const p = args.join(" ");
+    if (!p) return api.sendMessage("❌ Please provide a question or prompt.", event.threadID, event.messageID);
+
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+
     try {
-      const prompt = args.join(" ");
- 
-      if (prompt) {
-        const processingMessage = await api.sendMessage(`Asking Gemini.please wait moment..⏳`, event.threadID);
-        const response = await axios.get(`https://shuddho-ts-api.hf.space/api/geminiweb?prompt=${encodeURIComponent(prompt)}`);
- 
-        if (response.data && response.data.reply) {
-          await api.sendMessage({ body: response.data.reply }, event.threadID, event.messageID);
-          console.log(`Sent Gemini's response to the user`);
-        } else {
-          throw new Error(`Invalid or missing response from Gemini API`);
-        }
- 
-        await api.unsendMessage(processingMessage.messageID);
-      }
- 
-    } catch (error) {
-      console.error(`❌ | Failed to get Gemini's response: ${error.message}`);
-      api.sendMessage(`❌ | An error occured. You can try typing your query again or resending it. There might be an issue with the server that's causing the problem, and it might resolve on retrying.`, event.threadID);
+      const r = await a.get(`${u}?ask=${encodeURIComponent(p)}`);
+      const reply = r.data?.reply;
+      if (!reply) throw new Error("No response from Gemini API.");
+
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+      api.sendMessage(reply, event.threadID, (err, i) => {
+        if (!i) return;
+        global.GoatBot.onReply.set(i.messageID, { commandName: this.config.name, author: event.senderID });
+      }, event.messageID);
+
+    } catch (e) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      api.sendMessage("⚠ Gemini API theke response pawa jachchhe na.", event.threadID, event.messageID);
     }
   },
+
+  onReply: async function({ api, event, Reply }) {
+    if ([api.getCurrentUserID()].includes(event.senderID)) return;
+    const p = event.body;
+    if (!p) return;
+
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+
+    try {
+      const r = await a.get(`${u}?ask=${encodeURIComponent(p)}`);
+      const reply = r.data?.reply;
+      if (!reply) throw new Error("No response from Gemini API.");
+
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+      api.sendMessage(reply, event.threadID, (err, i) => {
+        if (!i) return;
+        global.GoatBot.onReply.set(i.messageID, { commandName: this.config.name, author: event.senderID });
+      }, event.messageID);
+
+    } catch (e) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      api.sendMessage("⚠ Gemini API er response dite somossa hocchhe.", event.threadID, event.messageID);
+    }
+  }
 };
+
+const w = new g.GoatWrapper(module.exports);
+w.applyNoPrefix({ allowPrefix: true });
+
+const wrapper = new GoatWrapper(module.exports);
+wrapper.applyNoPrefix({ allowPrefix: true });
