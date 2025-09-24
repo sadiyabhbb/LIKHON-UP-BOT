@@ -1,57 +1,64 @@
-const axios = require("axios");
-const fs = require("fs");
-const path = require("path");
+const a = require("axios");
+const f = require("fs");
+const p = require("path");
 
-module.exports.config = {
-  name: "4k",
-  version: "1.0.1",
-  permission: 0,
-  credits: "NIROB",
-  description: "Reply to an image to upscale it to 4K",
-  category: "image",
-  usages: "Reply to an image",
-  cooldowns: 5
-};
+const u = "https://apis-toop.vercel.app/aryan/4k";
 
-module.exports.onStart = async function({ api, event }) {
-  try {
-    // Check if the message is a reply with an image
-    if (!event.messageReply || !event.messageReply.attachments || event.messageReply.attachments.length === 0 || event.messageReply.attachments[0].type !== "photo") {
-      return api.sendMessage("⚠️ Please reply to an image.", event.threadID, event.messageID);
+module.exports = {
+  config: {
+    name: "4k",
+    aliases: ["upscale"],
+    version: "1.1",
+    role: 0,
+    author: "ArYAN",
+    countDown: 10,
+    longDescription: "Upscale images to 4K resolution.",
+    category: "image",
+    guide: {
+      en: "${pn} reply to an image to upscale it to 4K resolution."
+    }
+  },
+
+  onStart: async function ({ message, event }) {
+    if (
+      !event.messageReply ||
+      !event.messageReply.attachments ||
+      !event.messageReply.attachments[0] ||
+      event.messageReply.attachments[0].type !== "photo"
+    ) {
+      return message.reply("📸 Please reply to an image to upscale it.");
     }
 
-    const imageUrl = event.messageReply.attachments[0].url;
-    api.sendMessage("⏳ Upscaling your image to 4K, please wait...", event.threadID, event.messageID);
+    const i = event.messageReply.attachments[0].url;
+    const t = p.join(__dirname, "cache", `upscaled_${Date.now()}.png`);
+    let m;
 
-    const upscaleApi = `http://meta.wisp.uno:12986/upscale?url=${encodeURIComponent(imageUrl)}`;
-    const res = await axios.get(upscaleApi);
+    try {
+      const r = await message.reply("🔄 Processing your image, please wait...");
+      m = r.messageID;
 
-    if (res.data?.status && res.data.result?.data?.downloadUrls?.length > 0) {
-      const upscaledUrl = res.data.result.data.downloadUrls[0];
-      const tempPath = path.join(__dirname, `cache_${Date.now()}.jpg`);
-      const writer = fs.createWriteStream(tempPath);
+      const d = await a.get(`${u}?imageUrl=${encodeURIComponent(i)}`);
+      if (!d.data.status) throw new Error(d.data.message || "API error");
 
-      const response = await axios.get(upscaledUrl, { responseType: "stream" });
-      response.data.pipe(writer);
+      const x = await a.get(d.data.enhancedImageUrl, { responseType: "stream" });
+      const w = f.createWriteStream(t);
+      x.data.pipe(w);
 
-      writer.on("finish", () => {
-        api.sendMessage(
-          { body: "✅ Image upscaled to 4K successfully!", attachment: fs.createReadStream(tempPath) },
-          event.threadID,
-          () => fs.unlinkSync(tempPath),
-          event.messageID
-        );
+      await new Promise((res, rej) => {
+        w.on("finish", res);
+        w.on("error", rej);
       });
 
-      writer.on("error", (err) => {
-        console.error(err);
-        api.sendMessage("❌ Failed to process upscaled image.", event.threadID, event.messageID);
+      await message.reply({
+        body: "✅ Your 4K upscaled image is ready!",
+        attachment: f.createReadStream(t),
       });
-    } else {
-      api.sendMessage("❌ Failed to upscale image.", event.threadID, event.messageID);
+    } catch (e) {
+      console.error("Upscale Error:", e);
+      message.reply("❌ An error occurred while upscaling the image. Please try again later.");
+    } finally {
+      if (m) message.unsend(m);
+      if (f.existsSync(t)) f.unlinkSync(t);
     }
-  } catch (err) {
-    console.error(err);
-    api.sendMessage("⚠️ Error while upscaling image.", event.threadID, event.messageID);
   }
 };
