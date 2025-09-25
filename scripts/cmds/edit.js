@@ -2,45 +2,21 @@ const axios = require("axios");
 const fs = require("fs-extra");
 const path = require("path");
 
-const VIP_FILE = path.join(__dirname, "vip.json");
-
 module.exports = {
   config: {
     name: "e",
     version: "1.1.0",
-    author: "IMRAN + VIP Lock by NIROB",
+    author: "IMRAN -> MODIFIED BY LIKHON AHMED",
     cooldowns: 5,
-    role: 0, // everyone, VIP enforced separately
+    role: 0, // everyone can use
     category: "image",
-    description: "AI image editing using prompt + image or attachment (VIP only)",
+    description: "AI image editing using prompt + image or attachment",
     usages: "edit [prompt] + reply image or link",
     dependencies: { axios: "" }
   },
 
-  langs: {
-    en: {
-      notVip: "❌ | You are not a VIP user. Type !vip to see how to get VIP access."
-    }
-  },
-
-  onStart: async function ({ api, event, args, message, getLang }) {
+  onStart: async function ({ api, event, args, message }) {
     try {
-      // === VIP check ===
-      let vipDB = [];
-      if (fs.existsSync(VIP_FILE)) {
-        try {
-          vipDB = JSON.parse(fs.readFileSync(VIP_FILE));
-        } catch {
-          vipDB = [];
-        }
-      }
-      const senderID = event.senderID;
-      const isVip = vipDB.some(
-        user => user.uid === senderID && (user.expire === 0 || user.expire > Date.now())
-      );
-      if (!isVip) return message.reply(getLang("notVip"));
-      // =================
-
       // === Image + Prompt handling ===
       let linkanh = event.messageReply?.attachments?.[0]?.url || null;
       const prompt = args.join(" ").split("|")[0]?.trim();
@@ -52,7 +28,7 @@ module.exports = {
       if (!linkanh || !prompt) {
         return api.sendMessage(
           `📸 𝙀𝘿𝙄𝙏•𝙄𝙈𝙂\n━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `⛔️ 𝙔𝙤𝙪 𝙢𝙪𝙨𝙩 𝙜𝙞𝙫𝙚 𝙗𝙤𝙩𝙝 𝙖 𝙥𝙧𝙤𝙢𝙥𝙩 𝙖𝙣𝙙 𝙖𝙣 𝙞𝙢𝙖𝙜𝙚!\n\n` +
+          `⛔️ You must give both a prompt and an image!\n\n` +
           `✨ Example:\n▶️ edit add cute girlfriend |\n\n` +
           `🖼️ Or Reply to an image:\n▶️ edit add cute girlfriend`,
           event.threadID,
