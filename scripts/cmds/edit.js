@@ -4,7 +4,7 @@ const path = require("path");
 
 module.exports = {
   config: {
-    name: "e",
+    name: "edit",
     version: "1.1.0",
     author: "IMRAN -> MODIFIED BY LIKHON AHMED",
     cooldowns: 5,
