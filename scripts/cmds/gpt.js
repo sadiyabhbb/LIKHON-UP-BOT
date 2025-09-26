@@ -1,192 +1,70 @@
-const axios = require('axios');
-
-// config 
-const apiKey = "";
-const maxTokens = 500;
-const numberGenerateImage = 4;
-const maxStorageMessage = 4;
-
-if (!global.temp.openAIUsing)
-	global.temp.openAIUsing = {};
-if (!global.temp.openAIHistory)
-	global.temp.openAIHistory = {};
-
-const { openAIUsing, openAIHistory } = global.temp;
+const g = require("fca-aryan-nix");
+const a = require("axios");
+const u = "http://65.109.80.126:20409/aryan/gpt-4";
 
 module.exports = {
-	config: {
-		name: "gpt",
-		version: "1.4",
-		author: "NTKhang",
-		countDown: 5,
-		role: 0,
-		description: {
-			vi: "GPT chat",
-			en: "GPT chat"
-		},
-		category: "box chat",
-		guide: {
-			vi: "   {pn} <draw> <nội dung> - tạo hình ảnh từ nội dung"
-				+ "\n   {pn} <clear> - xóa lịch sử chat với gpt"
-				+ "\n   {pn} <nội dung> - chat với gpt",
-			en: "   {pn} <draw> <content> - create image from content"
-				+ "\n   {pn} <clear> - clear chat history with gpt"
-				+ "\n   {pn} <content> - chat with gpt"
-		}
-	},
+  config: {
+    name: "gpt",
+    aliases: ["aix","chat"],
+    version: "0.0.2",
+    author: "ArYAN",
+    countDown: 3,
+    role: 0,
+    shortDescription: "Ask GPT-4 AI",
+    longDescription: "Talk with GPT-4 AI using Aryan's updated API",
+    category: "AI",
+    guide: "/gpt [your question]"
+  },
 
-	langs: {
-		vi: {
-			apiKeyEmpty: "Vui lòng cung cấp api key cho openai tại file scripts/cmds/gpt.js",
-			invalidContentDraw: "Vui lòng nhập nội dung bạn muốn vẽ",
-			yourAreUsing: "Bạn đang sử dụng gpt chat, vui lòng chờ quay lại sau khi yêu cầu trước kết thúc",
-			processingRequest: "Đang xử lý yêu cầu của bạn, quá trình này có thể mất vài phút, vui lòng chờ",
-			invalidContent: "Vui lòng nhập nội dung bạn muốn chat",
-			error: "Đã có lỗi xảy ra\n%1",
-			clearHistory: "Đã xóa lịch sử chat của bạn với gpt"
-		},
-		en: {
-			apiKeyEmpty: "Please provide api key for openai at file scripts/cmds/gpt.js",
-			invalidContentDraw: "Please enter the content you want to draw",
-			yourAreUsing: "You are using gpt chat, please wait until the previous request ends",
-			processingRequest: "Processing your request, this process may take a few minutes, please wait",
-			invalidContent: "Please enter the content you want to chat",
-			error: "An error has occurred\n%1",
-			clearHistory: "Your chat history with gpt has been deleted"
-		}
-	},
+  onStart: async function({ api, event, args }) {
+    const p = args.join(" ");
+    if (!p) return api.sendMessage("❌ Please provide a question or prompt.", event.threadID, event.messageID);
 
-	onStart: async function ({ message, event, args, getLang, prefix, commandName }) {
-		if (!apiKey)
-			return message.reply(getLang('apiKeyEmpty', prefix));
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
 
-		switch (args[0]) {
-			case 'img':
-			case 'image':
-			case 'draw': {
-				if (!args[1])
-					return message.reply(getLang('invalidContentDraw'));
-				if (openAIUsing[event.senderID])
-					return message.reply(getLang("yourAreUsing"));
+    try {
+      const r = await a.get(`${u}?ask=${encodeURIComponent(p)}`);
+      const reply = r.data?.reply;
+      if (!reply) throw new Error("No response from GPT API.");
 
-				openAIUsing[event.senderID] = true;
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
 
-				let sending;
-				try {
-					sending = message.reply(getLang('processingRequest'));
-					const responseImage = await axios({
-						url: "https://api.openai.com/v1/images/generations",
-						method: "POST",
-						headers: {
-							"Authorization": `Bearer ${apiKey}`,
-							"Content-Type": "application/json"
-						},
-						data: {
-							prompt: args.slice(1).join(' '),
-							n: numberGenerateImage,
-							size: '1024x1024'
-						}
-					});
-					const imageUrls = responseImage.data.data;
-					const images = await Promise.all(imageUrls.map(async (item) => {
-						const image = await axios.get(item.url, {
-							responseType: 'stream'
-						});
-						image.data.path = `${Date.now()}.png`;
-						return image.data;
-					}));
-					return message.reply({
-						attachment: images
-					});
-				}
-				catch (err) {
-					const errorMessage = err.response?.data.error.message || err.message;
-					return message.reply(getLang('error', errorMessage || ''));
-				}
-				finally {
-					delete openAIUsing[event.senderID];
-					message.unsend((await sending).messageID);
-				}
-			}
-			case 'clear': {
-				openAIHistory[event.senderID] = [];
-				return message.reply(getLang('clearHistory'));
-			}
-			default: {
-				if (!args[0])
-					return message.reply(getLang('invalidContent'));
+      api.sendMessage(reply, event.threadID, (err, i) => {
+        if (!i) return;
+        global.GoatBot.onReply.set(i.messageID, { commandName: this.config.name, author: event.senderID });
+      }, event.messageID);
 
-				handleGpt(event, message, args, getLang, commandName);
-			}
-		}
-	},
+    } catch (e) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      api.sendMessage("⚠ GPT API theke response pawa jacchhe na.", event.threadID, event.messageID);
+    }
+  },
 
-	onReply: async function ({ Reply, message, event, args, getLang, commandName }) {
-		const { author } = Reply;
-		if (author != event.senderID)
-			return;
+  onReply: async function({ api, event, Reply }) {
+    if ([api.getCurrentUserID()].includes(event.senderID)) return;
+    const p = event.body;
+    if (!p) return;
 
-		handleGpt(event, message, args, getLang, commandName);
-	}
+    api.setMessageReaction("⏳", event.messageID, () => {}, true);
+
+    try {
+      const r = await a.get(`${u}?ask=${encodeURIComponent(p)}`);
+      const reply = r.data?.reply;
+      if (!reply) throw new Error("No response from GPT API.");
+
+      api.setMessageReaction("✅", event.messageID, () => {}, true);
+
+      api.sendMessage(reply, event.threadID, (err, i) => {
+        if (!i) return;
+        global.GoatBot.onReply.set(i.messageID, { commandName: this.config.name, author: event.senderID });
+      }, event.messageID);
+
+    } catch (e) {
+      api.setMessageReaction("❌", event.messageID, () => {}, true);
+      api.sendMessage("⚠ GPT API er response dite somossa hocchhe.", event.threadID, event.messageID);
+    }
+  }
 };
 
-async function askGpt(event) {
-	const response = await axios({
-		url: "https://api.openai.com/v1/chat/completions",
-		method: "POST",
-		headers: {
-			"Authorization": `Bearer ${apiKey}`,
-			"Content-Type": "application/json"
-		},
-		data: {
-			model: "gpt-3.5-turbo",
-			messages: openAIHistory[event.senderID],
-			max_tokens: maxTokens,
-			temperature: 0.7
-		}
-	});
-	return response;
-}
-
-async function handleGpt(event, message, args, getLang, commandName) {
-	try {
-		openAIUsing[event.senderID] = true;
-
-		if (
-			!openAIHistory[event.senderID] ||
-			!Array.isArray(openAIHistory[event.senderID])
-		)
-			openAIHistory[event.senderID] = [];
-
-		if (openAIHistory[event.senderID].length >= maxStorageMessage)
-			openAIHistory[event.senderID].shift();
-
-		openAIHistory[event.senderID].push({
-			role: 'user',
-			content: args.join(' ')
-		});
-
-		const response = await askGpt(event);
-		const text = response.data.choices[0].message.content;
-
-		openAIHistory[event.senderID].push({
-			role: 'assistant',
-			content: text
-		});
-
-		return message.reply(text, (err, info) => {
-			global.GoatBot.onReply.set(info.messageID, {
-				commandName,
-				author: event.senderID,
-				messageID: info.messageID
-			});
-		});
-	}
-	catch (err) {
-		const errorMessage = err.response?.data.error.message || err.message || "";
-		return message.reply(getLang('error', errorMessage));
-	}
-	finally {
-		delete openAIUsing[event.senderID];
-	}
-}
+const w = new g.GoatWrapper(module.exports);
+w.applyNoPrefix({ allowPrefix: true });
