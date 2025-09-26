@@ -1,35 +1,40 @@
-const fs = require("fs");
-const path = __dirname + "/../../data/teach.json";
+const axios = require("axios");
 
 module.exports = {
   config: {
     name: "teach",
-    aliases: [],
-    author: "ChatGPT",
-    version: "1.0",
+    version: "1.0.0",
+    author: "LIKHON AHMED",
+    cooldowns: 3,
     role: 0,
-    description: "Teach the bot how to reply to a message",
-    usage: "/teach question | answer",
+    category: "chat",
+    description: "Teach the bot new responses",
+    usages: "Use : /teach [question] | [answer]"
   },
 
-  onStart: async function ({ message, args }) {
-    if (!args[0]) return message.reply("❌ Format:\n/teach question | answer");
-
-    const [q, a] = args.join(" ").split("|").map(i => i.trim());
-    if (!q || !a) return message.reply("❌ Both question and answer are required.");
-
-    let db = {};
-    if (fs.existsSync(path)) {
-      try {
-        db = JSON.parse(fs.readFileSync(path));
-      } catch (e) {
-        return message.reply("⚠️ Failed to read database.");
+  onStart: async function ({ api, event, args, message }) {
+    try {
+      const input = args.join(" ");
+      if (!input.includes("|")) {
+        return message.reply("⚠ Usage: teach [question] | [answer]");
       }
+
+      const [ask, ans] = input.split("|").map(s => s.trim());
+      if (!ask || !ans) {
+        return message.reply("⚠ You must provide both a question and an answer.");
+      }
+
+      const url = `http://65.109.80.126:20392/sim?type=teach&ask=${encodeURIComponent(ask)}&ans=${encodeURIComponent(ans)}`;
+      const res = await axios.get(url);
+
+      if (res.data) {
+        return message.reply(`✅ Learned!\n\n❓ ${ask}\n➡ ${ans}`);
+      } else {
+        return message.reply("❌ Failed to teach.");
+      }
+    } catch (err) {
+      console.error(err);
+      return message.reply("❌ Error teaching the bot.");
     }
-
-    db[q.toLowerCase()] = a;
-    fs.writeFileSync(path, JSON.stringify(db, null, 2));
-
-    message.reply(`✅ Learned:\n🧠 ${q} → 💬 ${a}`);
   }
 };
