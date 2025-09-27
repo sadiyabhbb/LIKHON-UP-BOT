@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "bot",
-    version: "2.4",
+    version: "2.5",
     author: "Nazrul | Fixed By LIKHON AHMED",
     countDown: 5,
     role: 0,
@@ -44,6 +44,9 @@ module.exports = {
 
     
     if (text.startsWith("/")) return;
+
+    
+    if (/^\d+$/.test(text) || text.length === 1) return;
 
     const data = await usersData.get(event.senderID);
     const name = data.name || "Friend";
@@ -91,7 +94,7 @@ module.exports = {
       }
     }
 
-
+    
     const lowerText = text.toLowerCase();
     if (
       lowerText.includes("bot") ||
