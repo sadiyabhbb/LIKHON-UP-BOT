@@ -3,7 +3,7 @@ const axios = require("axios");
 module.exports = {
   config: {
     name: "bot",
-    version: "2.3",
+    version: "2.4",
     author: "Nazrul | Fixed By LIKHON AHMED",
     countDown: 5,
     role: 0,
@@ -41,6 +41,9 @@ module.exports = {
   onChat: async ({ api, event, usersData }) => {
     const text = event.body?.trim();
     if (!text) return;
+
+    
+    if (text.startsWith("/")) return;
 
     const data = await usersData.get(event.senderID);
     const name = data.name || "Friend";
@@ -88,7 +91,7 @@ module.exports = {
       }
     }
 
-    
+
     const lowerText = text.toLowerCase();
     if (
       lowerText.includes("bot") ||
