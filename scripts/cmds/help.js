@@ -1,10 +1,13 @@
 const { commands } = global.GoatBot;
 const { getPrefix } = global.utils;
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports = {
   config: {
     name: "help",
-    version: "2.2",
+    version: "2.4",
     author: "MODIFIED LIKHON AHMED",
     countDown: 5,
     role: 0,
@@ -16,7 +19,7 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ message, args, event, threadsData }) {
+  onStart: async function ({ message, args, event }) {
     const { threadID } = event;
     const prefix = getPrefix(threadID);
 
@@ -96,6 +99,23 @@ module.exports = {
     msg += `╰‣ ADMIN: 𝐋𝐈𝐊𝐇𝐎𝐍 𝐀𝐇𝐌𝐄𝐃\n`;
     msg += `╰‣ If you Don't know how to use commands Then Type ${prefix}help [commandName]`;
 
-    return message.reply(msg);
+    
+    const gifUrl = "https://files.catbox.moe/byp8xa.gif";
+    const gifPath = path.join(__dirname, "help.gif");
+
+    try {
+      
+      if (!fs.existsSync(gifPath)) {
+        const response = await axios.get(gifUrl, { responseType: "arraybuffer" });
+        fs.writeFileSync(gifPath, Buffer.from(response.data, "binary"));
+      }
+
+      return message.reply({
+        body: msg,
+        attachment: fs.createReadStream(gifPath)
+      });
+    } catch (err) {
+      return message.reply(msg + `\n\n⚠ GIF load হয়নি: ${err.message}`);
+    }
   }
 };
